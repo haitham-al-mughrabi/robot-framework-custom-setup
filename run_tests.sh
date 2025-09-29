@@ -103,6 +103,9 @@ FULL_WIDTH_VIEWPORT="False"
 TEST_FILTER=""
 SUITE_FILTER=""
 
+# Array to store custom variables
+CUSTOM_VARIABLES=()
+
 # Function to show usage
 show_usage() {
 cat << EOF
@@ -152,8 +155,14 @@ EXAMPLES:
     # Run in dev container headless mode
     ./run_tests.sh --headless Tests/LoginTests.robot
 
-    # Run with maximized browser and auto-close
-    ./run_tests.sh --maximize-browser Tests/LoginTests.robot
+    # Run with custom variables
+    ./run_tests.sh -v USER_EMAIL:test@example.com -v PASSWORD:secret123 Tests/
+
+    # Run with multiple custom variables
+    ./run_tests.sh --variable BASE_URL:https://staging.example.com --variable TIMEOUT:30 Tests/
+
+    # Run with maximized browser and custom variables
+    ./run_tests.sh --maximize-browser -v ENVIRONMENT:staging -v DEBUG:True Tests/LoginTests.robot
 
     # Run with full-width viewport (takes entire screen width)
     ./run_tests.sh --full-width-viewport Tests/ResponsiveTests.robot
@@ -167,14 +176,14 @@ EXAMPLES:
     # Run with maximized browser, video recording, and auto-close
     ./run_tests.sh --maximize-browser --record-video True --auto-close-browser Tests/DemoTests.robot
 
-    # Run only specific test case
-    ./run_tests.sh --test "Login Test" Tests/
+    # Run only specific test case with custom variables
+    ./run_tests.sh --test "Login Test" -v USER:admin -v PASS:admin123 Tests/
 
     # Run only specific suite
     ./run_tests.sh --suite "LoginSuite" Tests/
 
-    # Run specific test in specific suite
-    ./run_tests.sh --test "Login Test" --suite "LoginSuite" Tests/
+    # Run specific test in specific suite with custom variables
+    ./run_tests.sh --test "Login Test" --suite "LoginSuite" --variable API_KEY:abc123 Tests/
 
 
 EOF
@@ -183,6 +192,10 @@ EOF
 # Parse command line arguments
 while [[ $# -gt 0 ]]; do
   case $1 in
+    -v|--variable)
+      CUSTOM_VARIABLES+=("$2")
+      shift 2
+      ;;
     --test)
       TEST_FILTER="$2"
       shift 2
@@ -318,6 +331,12 @@ if [[ -n "$SUITE_FILTER" ]]; then
   TEST_SUITE_ARGS="$TEST_SUITE_ARGS --suite '$SUITE_FILTER'"
 fi
 
+# Build custom variables arguments
+CUSTOM_VARS_ARGS=""
+for var in "${CUSTOM_VARIABLES[@]}"; do
+  CUSTOM_VARS_ARGS="$CUSTOM_VARS_ARGS --variable '$var'"
+done
+
 # Cleanup any existing VNC processes to prevent port conflicts
 echo "🧹 Cleaning up any existing VNC processes..."
 cleanup_vnc
@@ -331,6 +350,12 @@ if [[ -n "$TEST_FILTER" ]]; then
 fi
 if [[ -n "$SUITE_FILTER" ]]; then
   echo "📦 Suite filter: ${SUITE_FILTER}"
+fi
+if [[ ${#CUSTOM_VARIABLES[@]} -gt 0 ]]; then
+  echo "🔧 Custom variables:"
+  for var in "${CUSTOM_VARIABLES[@]}"; do
+    echo " ${var}"
+  done
 fi
 echo "🔧 Browser Control:"
 echo " HEADLESS: ${HEADLESS}"
@@ -490,6 +515,7 @@ if [[ "$USE_DOCKER" == "false" ]]; then
     --variable WINDOW_WIDTH:${WINDOW_WIDTH} \
     --variable CONTEXT_TYPE:${CONTEXT_TYPE} \
     --variable AUTO_CLOSE_BROWSER:${AUTO_CLOSE_BROWSER} \
+    ${CUSTOM_VARS_ARGS} \
     --outputdir Results/Reports/ \
     --splitlog \
     --logtitle '${REPORT_TITLE}' \
@@ -544,6 +570,7 @@ elif [[ "$HEADLESS" == "True" ]]; then
   --variable WINDOW_WIDTH:${WINDOW_WIDTH} \
   --variable CONTEXT_TYPE:${CONTEXT_TYPE} \
   --variable AUTO_CLOSE_BROWSER:${AUTO_CLOSE_BROWSER} \
+  ${CUSTOM_VARS_ARGS} \
   --outputdir /opt/robotframework/tests/Results/Reports/ \
   --splitlog \
   --logtitle '${REPORT_TITLE}' \
@@ -615,6 +642,7 @@ else
   --variable WINDOW_WIDTH:${WINDOW_WIDTH} \
   --variable CONTEXT_TYPE:${CONTEXT_TYPE} \
   --variable AUTO_CLOSE_BROWSER:${AUTO_CLOSE_BROWSER} \
+  ${CUSTOM_VARS_ARGS} \
   --outputdir /opt/robotframework/tests/Results/Reports/ \
   --splitlog \
   --logtitle '${REPORT_TITLE}' \

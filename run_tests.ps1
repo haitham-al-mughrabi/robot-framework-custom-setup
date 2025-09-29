@@ -4,6 +4,7 @@ param(
     [string]$TestPath = "Tests",
     [string]$Test = "",
     [string]$Suite = "",
+    [string[]]$Variable = @(),
     [string]$CaptchaSolver = "True",
     [string]$WindowFull = "False",
     [string]$WindowMaximized = "False",
@@ -39,6 +40,7 @@ Usage: .\run_tests.ps1 [OPTIONS] [TEST_PATH]
 
 GENERAL OPTIONS:
     -Help                      Show this help message
+    -Variable VARNAME:VALUE    Add custom Robot Framework variable (can be used multiple times)
 
 TEST SELECTION OPTIONS:
     -Test TEST_NAME           Run only tests matching this pattern
@@ -61,14 +63,20 @@ EXAMPLES:
     # Run in headless mode
     .\run_tests.ps1 -Headless Tests\LoginTests.robot
 
-    # Run specific test case
-    .\run_tests.ps1 -Test "Login Test" Tests\
+    # Run with custom variables
+    .\run_tests.ps1 -Variable "USER_EMAIL:test@example.com","PASSWORD:secret123" Tests\
+
+    # Run with single custom variable
+    .\run_tests.ps1 -Variable "BASE_URL:https://staging.example.com" Tests\
+
+    # Run specific test case with custom variables
+    .\run_tests.ps1 -Test "Login Test" -Variable "USER:admin","PASS:admin123" Tests\
 
     # Run specific suite
     .\run_tests.ps1 -Suite "LoginSuite" Tests\
 
-    # Run with maximized browser
-    .\run_tests.ps1 -MaximizeBrowser Tests\LoginTests.robot
+    # Run with maximized browser and custom variables
+    .\run_tests.ps1 -MaximizeBrowser -Variable "ENVIRONMENT:staging" Tests\LoginTests.robot
 
 "@
     exit 0
@@ -125,6 +133,11 @@ if ($Suite) {
     $RobotArgs += "--suite", $Suite
 }
 
+# Add custom variables if specified
+foreach ($var in $Variable) {
+    $RobotArgs += "--variable", $var
+}
+
 # Add test path
 $RobotArgs += $TestPath
 
@@ -134,6 +147,12 @@ Write-Host "======================================="
 Write-Host "📁 Test path: $TestPath"
 if ($Test) { Write-Host "🎯 Test filter: $Test" }
 if ($Suite) { Write-Host "📦 Suite filter: $Suite" }
+if ($Variable.Count -gt 0) {
+    Write-Host "🔧 Custom variables:"
+    foreach ($var in $Variable) {
+        Write-Host " $var"
+    }
+}
 Write-Host "🔧 Configuration:"
 Write-Host " HEADLESS: $HeadlessValue"
 Write-Host " ENVIRONMENT: $Environment"
