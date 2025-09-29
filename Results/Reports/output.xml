@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.3.2 (Python 3.13.7 on linux)" generated="2025-09-29T05:34:06.601090" rpa="false" schemaversion="5">
+<suite id="s1" name="Tests" source="/opt/robotframework/tests/Tests">
+<suite id="s1-s1" name="Test" source="/opt/robotframework/tests/Tests/Test.robot">
+<test id="s1-s1-t1" name="Test 123" line="4">
+<kw name="Log" owner="BuiltIn">
+<msg time="2025-09-29T05:34:06.623827" level="TRACE">Arguments: [ 'Welcome' ]</msg>
+<msg time="2025-09-29T05:34:06.623956" level="INFO">Welcome</msg>
+<msg time="2025-09-29T05:34:06.623992" level="TRACE">Return: None</msg>
+<arg>Welcome</arg>
+<doc>Logs the given message with the given level.</doc>
+<status status="PASS" start="2025-09-29T05:34:06.623733" elapsed="0.000290"/>
+</kw>
+<status status="PASS" start="2025-09-29T05:34:06.623187" elapsed="0.001733"/>
+</test>
+<status status="PASS" start="2025-09-29T05:34:06.622126" elapsed="0.003306"/>
+</suite>
+<status status="PASS" start="2025-09-29T05:34:06.608588" elapsed="0.017155"/>
+</suite>
+<statistics>
+<total>
+<stat pass="1" fail="0" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="Tests" id="s1" pass="1" fail="0" skip="0">Tests</stat>
+<stat name="Test" id="s1-s1" pass="1" fail="0" skip="0">Tests.Test</stat>
+</suite>
+</statistics>
+<errors>
+<msg time="2025-09-29T05:34:06.605701" level="ERROR">Taking listener 'Resources/Setup/Listeners/KeywordListener.py' into use failed: Importing listener 'Resources/Setup/Listeners/KeywordListener.py' failed: ModuleNotFoundError: No module named 'Resources/Setup/Listeners/KeywordListener'
+Traceback (most recent call last):
+  None
+PYTHONPATH:
+  /opt/robotframework/tests
+  /opt/robotframework/tests
+  /opt/robotframework/tests
+  /usr/lib64/python313.zip
+  /usr/lib64/python3.13
+  /usr/lib64/python3.13/lib-dynload
+  /usr/local/lib64/python3.13/site-packages
+  /usr/local/lib/python3.13/site-packages
+  /usr/lib64/python3.13/site-packages
+  /usr/lib/python3.13/site-packages</msg>
+<msg time="2025-09-29T05:34:06.606860" level="ERROR">Taking listener 'Resources/Setup/Listeners/LocatorFailureListener.py' into use failed: Importing listener 'Resources/Setup/Listeners/LocatorFailureListener.py' failed: ModuleNotFoundError: No module named 'Resources/Setup/Listeners/LocatorFailureListener'
+Traceback (most recent call last):
+  None
+PYTHONPATH:
+  /opt/robotframework/tests
+  /opt/robotframework/tests
+  /opt/robotframework/tests
+  /usr/lib64/python313.zip
+  /usr/lib64/python3.13
+  /usr/lib64/python3.13/lib-dynload
+  /usr/local/lib64/python3.13/site-packages
+  /usr/local/lib/python3.13/site-packages
+  /usr/lib64/python3.13/site-packages
+  /usr/lib/python3.13/site-packages</msg>
+</errors>
+</robot>

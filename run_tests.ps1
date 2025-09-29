@@ -159,38 +159,7 @@ Write-Host " ENVIRONMENT: $Environment"
 Write-Host " LOG_LEVEL: $LogLevel"
 Write-Host "======================================="
 
-# Cleanup function for Windows
-function Cleanup-VNC {
-    Write-Host "🛑 Cleaning up VNC services..."
 
-    # Stop processes using taskkill
-    $processes = @("Xvfb", "x11vnc", "websockify")
-    foreach ($proc in $processes) {
-        try {
-            Stop-Process -Name $proc -Force -ErrorAction SilentlyContinue
-            Write-Host "Stopped $proc processes"
-        } catch {
-            # Process not running, continue
-        }
-    }
-
-    # Stop Docker containers
-    try {
-        $containers = docker ps -q --filter "ancestor=$ImageName" 2>$null
-        if ($containers) {
-            docker kill $containers 2>$null
-            Write-Host "Stopped Docker containers"
-        }
-    } catch {
-        # Docker not available or no containers running
-    }
-}
-
-# Register cleanup on exit
-Register-EngineEvent PowerShell.Exiting -Action { Cleanup-VNC } | Out-Null
-
-# Cleanup existing processes
-Cleanup-VNC
 
 # Cross-platform volume mount handling
 $CurrentDir = Get-Location

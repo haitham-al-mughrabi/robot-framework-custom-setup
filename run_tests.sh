@@ -2,65 +2,7 @@
 
 set -e
 
-# Function to cleanup VNC processes (cross-platform)
-cleanup_vnc() {
-    echo "🛑 Cleaning up VNC services..."
 
-    # Detect platform and use appropriate cleanup method
-    case "$(uname -s 2>/dev/null || echo Windows)" in
-        CYGWIN*|MINGW*|MSYS*|Windows)
-            # Windows cleanup
-            if command -v taskkill >/dev/null 2>&1; then
-                for proc in Xvfb x11vnc websockify; do
-                    taskkill /F /IM "${proc}.exe" 2>/dev/null && echo "Stopped $proc processes" || true
-                done
-            elif command -v wmic >/dev/null 2>&1; then
-                for proc in Xvfb x11vnc websockify; do
-                    wmic process where "name='${proc}.exe'" delete 2>/dev/null && echo "Stopped $proc processes" || true
-                done
-            fi
-            ;;
-        *)
-            # Unix-like systems (Linux, macOS, etc.)
-            if command -v pkill >/dev/null 2>&1; then
-                for proc in Xvfb x11vnc websockify; do
-                    if pkill -f $proc 2>/dev/null; then
-                        echo "Stopped $proc processes with pkill"
-                    fi
-                done
-            elif command -v ps >/dev/null 2>&1; then
-                for proc in Xvfb x11vnc websockify; do
-                    pids=$(ps aux | grep $proc | grep -v grep | awk '{print $2}' 2>/dev/null)
-                    if [ -n "$pids" ]; then
-                        echo "Stopping $proc..."
-                        echo $pids | xargs kill -9 2>/dev/null
-                    fi
-                done
-            else
-                echo "⚠️  No suitable process management tool found, skipping cleanup"
-            fi
-            ;;
-    esac
-
-    # Kill any Docker containers using VNC ports (cross-platform)
-    if command -v docker >/dev/null 2>&1; then
-        case "$(uname -s 2>/dev/null || echo Windows)" in
-            CYGWIN*|MINGW*|MSYS*|Windows)
-                # Windows Docker cleanup
-                for container in $(docker ps -q --filter "ancestor=robot-framework-custom:latest" 2>/dev/null); do
-                    docker kill "$container" 2>/dev/null && echo "Stopped Docker container $container"
-                done
-                ;;
-            *)
-                # Unix Docker cleanup
-                docker ps -q --filter "ancestor=robot-framework-custom:latest" | xargs -r docker kill 2>/dev/null
-                ;;
-        esac
-    fi
-}
-
-# Set trap to cleanup on script exit
-trap cleanup_vnc EXIT INT TERM
 
 # Check if running in dev container
 if [[ -n "$REMOTE_CONTAINERS" ]] || [[ "$PWD" == "/opt/robotframework/tests" ]]; then
@@ -337,9 +279,6 @@ for var in "${CUSTOM_VARIABLES[@]}"; do
   CUSTOM_VARS_ARGS="$CUSTOM_VARS_ARGS --variable '$var'"
 done
 
-# Cleanup any existing VNC processes to prevent port conflicts
-echo "🧹 Cleaning up any existing VNC processes..."
-cleanup_vnc
 
 # Display configuration summary
 echo "🤖 Robot Framework Docker Test Runner"
@@ -419,48 +358,6 @@ fi
 echo "🔧 Platform: $HOST_OS ($HOST_ARCH)"
 echo "📁 Volume mount: $VOLUME_MOUNT"
 
-# Function to open VNC URL in browser automatically
-open_vnc_browser() {
-  sleep 10 # Wait for VNC server to be fully ready
-  VNC_URL="http://localhost:6080/vnc.html?autoconnect=true"
-  echo "🌐 Opening VNC viewer in your browser..."
-  # Detect OS and open browser accordingly
-  case "$(uname)" in
-    "Darwin") # macOS
-      open "$VNC_URL" 2>/dev/null && echo "✅ Browser opened automatically!" || echo "⚠️ Please visit: $VNC_URL"
-      ;;
-    "Linux")
-      if command -v xdg-open >/dev/null 2>&1; then
-        xdg-open "$VNC_URL" 2>/dev/null && echo "✅ Browser opened automatically!" || echo "⚠️ Please visit: $VNC_URL"
-      else
-        echo "🌐 Please open this URL in your browser: $VNC_URL"
-      fi
-      ;;
-    CYGWIN*|MINGW*|MSYS*) # Windows
-      start "$VNC_URL" 2>/dev/null && echo "✅ Browser opened automatically!" || echo "⚠️ Please visit: $VNC_URL"
-      ;;
-    *)
-      echo "🌐 Please open this URL in your browser: $VNC_URL"
-      ;;
-  esac
-}
-
-# Function to close VNC browser tab
-close_vnc_browser() {
-  if [[ "$KEEP_VNC_OPEN" == "False" ]]; then
-    echo "🔒 Auto-closing VNC browser tab..."
-    case "$(uname)" in
-      "Darwin") # macOS
-        osascript -e 'tell application "Safari" to close (every tab of every window whose URL contains "localhost:6080")' 2>/dev/null || \
-        osascript -e 'tell application "Google Chrome" to close (every tab whose URL contains "localhost:6080")' 2>/dev/null || \
-        echo "⚠️ Please manually close VNC browser tab"
-        ;;
-      *)
-        echo "ℹ️ Please manually close VNC browser tab or it will close automatically"
-        ;;
-    esac
-  fi
-}
 
 # 🎯 CONDITIONAL EXECUTION LOGIC
 if [[ "$USE_DOCKER" == "false" ]]; then
@@ -526,17 +423,6 @@ if [[ "$USE_DOCKER" == "false" ]]; then
     if [[ "$KEEP_VNC_OPEN" == "True" ]]; then
       echo "🌐 VNC still available at: http://localhost:6080"
       echo "Use ./stop_vnc.sh to stop VNC services manually"
-    else
-      echo "🛑 Cleaning up VNC services..."
-      # Kill VNC processes
-      for proc in Xvfb x11vnc websockify; do
-          pids=$(ps aux | grep $proc | grep -v grep | awk '{print $2}' 2>/dev/null)
-          if [ -n "$pids" ]; then
-              echo "Stopping $proc..."
-              echo $pids | xargs kill 2>/dev/null
-          fi
-      done
-      echo "✅ VNC services stopped"
     fi
   fi
 
@@ -578,8 +464,6 @@ elif [[ "$HEADLESS" == "True" ]]; then
   '${TEST_PATHS}'"
 else
   echo "🚀 Running in headed mode with live VNC viewing..."
-  # Start the background process to open browser
-  open_vnc_browser &
   # Determine VNC session duration
   if [[ "$KEEP_VNC_OPEN" == "True" ]]; then
     VNC_WAIT_TIME="300" # 5 minutes
@@ -615,8 +499,7 @@ else
   sleep 5
   echo '=============================================='
   echo '🚀 VNC Live View Ready!'
-  echo '🌐 Browser should open automatically in ~10s'
-  echo '🔗 Or manually visit: http://localhost:6080'
+  echo '🔗 Visit: http://localhost:6080'
   echo '=============================================='
   # Run Robot Framework tests
   echo '🤖 Starting Robot Framework tests...'
@@ -652,8 +535,6 @@ else
   echo '${VNC_MESSAGE}'
   sleep ${VNC_WAIT_TIME}
   "
-  # Auto-close VNC browser tab if requested
-  close_vnc_browser &
 fi
 
 # Function to display file links
